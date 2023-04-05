@@ -379,6 +379,7 @@ class Module(object):
             The ProfileResult reports `repeat` time costs in seconds.
         """
         try:
+            # gets the C function to evaluate runtime here. This could also be modified.
             feval = _ffi_api.RPCTimeEvaluator(
                 self,
                 func_name,

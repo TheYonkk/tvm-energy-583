@@ -703,6 +703,7 @@ def run_through_rpc(
                         random_fill(arg)
                 dev.sync()
 
+            # perhaps wrap the energy meter here, and intercept the costs
             costs = time_f(*args).results
 
         if len(costs) > 2:  # remove largest and smallest value to reduce variance

@@ -254,7 +254,6 @@ class ModelBasedTuner(Tuner):
                 average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
                 average_flops_per_watt = flops / average_watts
                 self.flops_max = max(self.flops_max, flops)
-                print(f"Average flops per watt: {average_flops_per_watt}, flops: {flops}, watts: {average_watts}")
                 self.ys.append(average_flops_per_watt)
             else:
                 self.xs.append(index)

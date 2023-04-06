@@ -138,6 +138,7 @@ class Tuner(object):
             for k, (inp, res) in enumerate(zip(inputs, results)):
                 config = inp.config
                 if res.error_no == 0:
+                    # https://en.wikipedia.org/wiki/Performance_per_watt#FLOPS_per_watt
                     flops = inp.task.flop / np.mean(res.costs)
                     average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
                     average_flops_per_watt = flops / average_watts

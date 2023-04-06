@@ -749,8 +749,8 @@ def run_through_rpc(
     estimated_active_run_cost_J = (sum(costs) / sample.duration) * total_energy_J
 
     # append time and energy to results file (for preliminary testing)
-    with open("/home/biff/Repositories/Energy-efficient-ML-compiler/samples.csv", "a") as f:
-        f.write(f"{tstamp - tic},{estimated_active_run_cost_J}\n")
+    # with open("/home/biff/Repositories/Energy-efficient-ML-compiler/samples.csv", "a") as f:
+    #     f.write(f"{tstamp - tic},{estimated_active_run_cost_J}\n")
 
     return MeasureResult(costs, errno, tstamp - tic + build_result.time_cost, tstamp, estimated_active_run_cost_J)
 

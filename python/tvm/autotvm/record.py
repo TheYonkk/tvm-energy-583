@@ -101,6 +101,7 @@ def encode(inp, result, protocol="json"):
                 result.error_no,
                 result.all_cost,
                 result.timestamp,
+                result.energy,
             ),
             "version": AUTOTVM_LOG_VERSION,
             "tvm_version": __version__,
@@ -174,7 +175,8 @@ def decode(row, protocol="json"):
         config = ConfigEntity.from_json_dict(row["config"])
         inp = MeasureInput(tgt, tsk, config)
         result = MeasureResult(*[tuple(x) if isinstance(x, list) else x for x in row["result"]])
-        config.cost = np.mean(result.costs)
+        # average energy cost instead of average time cost
+        config.cost = result.energy / len(result.costs) if result.energy is not None and result.energy != 'energy' else np.mean(result.costs)
 
         return inp, result
     if protocol == "pickle":

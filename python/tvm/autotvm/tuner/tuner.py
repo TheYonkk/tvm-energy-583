@@ -47,7 +47,7 @@ class Tuner(object):
 
         # keep the current best
         self.best_config = None
-        self.best_flops = 0
+        self.best_flops_per_watt = 0
         self.best_measure_pair = None
         self.best_iter = 0
         self.error_ct_threshold = 150
@@ -139,10 +139,13 @@ class Tuner(object):
                 config = inp.config
                 if res.error_no == 0:
                     flops = inp.task.flop / np.mean(res.costs)
+                    average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
+                    average_flops_per_watt = flops / average_watts
                     error_ct = 0
                     result_msg = res
                 else:
                     flops = 0
+                    average_flops_per_watt = 0
                     error_ct += 1
                     tb, error = res.costs
                     if isinstance(error, str):
@@ -151,8 +154,8 @@ class Tuner(object):
                         errors.append(tb + "\n" + str(error))
                     result_msg = errors[-1]
 
-                if flops > self.best_flops:
-                    self.best_flops = flops
+                if average_flops_per_watt > self.best_flops_per_watt:
+                    self.best_flops_per_watt = flops
                     self.best_config = config
                     self.best_measure_pair = (inp, res)
                     self.best_iter = i + k
@@ -162,7 +165,7 @@ class Tuner(object):
                     i + k + 1,
                     si_prefix,
                     format_si_prefix(flops, si_prefix),
-                    format_si_prefix(self.best_flops, si_prefix),
+                    format_si_prefix(self.best_flops_per_watt, si_prefix),
                     result_msg,
                     config,
                 )
@@ -201,7 +204,7 @@ class Tuner(object):
     def reset(self):
         """reset the status of tuner"""
         self.best_config = None
-        self.best_flops = 0
+        self.best_flops_per_watt = 0
         self.best_measure_pair = None
 
     def load_history(self, data_set, min_seed_records=500):

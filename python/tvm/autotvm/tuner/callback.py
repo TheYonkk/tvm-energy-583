@@ -128,7 +128,7 @@ def progress_bar(total, prefix="", si_prefix="G"):
         """Context to store local variables"""
 
         def __init__(self):
-            self.best_flops = 0
+            self.best_flops_per_watt = 0
             self.cur_flops = 0
             self.ct = 0
             self.total = total
@@ -145,7 +145,7 @@ def progress_bar(total, prefix="", si_prefix="G"):
 
     if logger.level < logging.DEBUG:  # only print progress bar in non-debug mode
         sys.stdout.write(
-            "\r%s Current/Best: %7.2f/%7.2f %sFLOPS | Progress: (%d/%d) "
+            "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
             "| %.2f s" % (prefix, 0, 0, si_prefix, 0, total, time.time() - tic)
         )
         sys.stdout.flush()
@@ -160,15 +160,15 @@ def progress_bar(total, prefix="", si_prefix="G"):
 
         if not logger.isEnabledFor(logging.DEBUG):  # only print progress bar in non-debug mode
             ctx.cur_flops = flops
-            ctx.best_flops = tuner.best_flops
+            ctx.best_flops_per_watt = tuner.best_flops_per_watt
 
             sys.stdout.write(
-                "\r%s Current/Best: %7.2f/%7.2f %sFLOPS | Progress: (%d/%d) "
+                "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
                 "| %.2f s"
                 % (
                     prefix,
                     format_si_prefix(ctx.cur_flops, si_prefix),
-                    format_si_prefix(ctx.best_flops, si_prefix),
+                    format_si_prefix(ctx.best_flops_per_watt, si_prefix),
                     si_prefix,
                     ctx.ct,
                     ctx.total,

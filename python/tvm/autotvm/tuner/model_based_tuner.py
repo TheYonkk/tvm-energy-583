@@ -251,11 +251,14 @@ class ModelBasedTuner(Tuner):
             if res.error_no == 0:
                 self.xs.append(index)
                 flops = inp.task.flop / np.mean(res.costs)
+                average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
+                average_flops_per_watt = flops / average_watts
                 self.flops_max = max(self.flops_max, flops)
-                self.ys.append(flops)
+                print(f"Average flops per watt: {average_flops_per_watt}, flops: {flops}, watts: {average_watts}")
+                self.ys.append(average_flops_per_watt)
             else:
                 self.xs.append(index)
-                self.ys.append(0.0)
+                self.ys.append(0.0)  #TODO does this need to be changed to be a high value???
             # Usually the update function is called during the tune loop
             # after the index is already added to the visited set.
             # However, adding the index to visited again here enables us

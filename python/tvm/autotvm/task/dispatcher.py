@@ -317,7 +317,9 @@ class ApplyHistoryBest(DispatchContext):
                     best_by_targetkey[key] = (inp, res)
                 else:
                     _, other_res = best_by_targetkey[key]
-                    if np.mean(other_res.costs) > np.mean(res.costs):
+                    other_res_costs = other_res.energy / len(other_res.costs)
+                    res_costs = res.energy / len(res.costs)
+                    if other_res_costs < res_costs:
                         best_by_targetkey[key] = (inp, res)
 
             # use model as key to build best map
@@ -327,7 +329,9 @@ class ApplyHistoryBest(DispatchContext):
                     best_by_model[key] = (inp, res)
             else:
                 _, other_res = best_by_model[key]
-                if np.mean(other_res.costs) > np.mean(res.costs):
+                other_res_costs = other_res.energy / len(other_res.costs)
+                res_costs = res.energy / len(res.costs)
+                if other_res_costs < res_costs:
                     best_by_model[key] = (inp, res)
 
         logger.debug("Finish loading %d records", counter)

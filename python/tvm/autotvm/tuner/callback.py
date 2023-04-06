@@ -153,13 +153,15 @@ def progress_bar(total, prefix="", si_prefix="G"):
     def _callback(tuner, inputs, results):
         ctx.ct += len(inputs)
 
-        flops = 0
+        cur_flops_per_watt = 0
         for inp, res in zip(inputs, results):
             if res.error_no == 0:
                 flops = inp.task.flop / np.mean(res.costs)
+                average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
+                cur_flops_per_watt = flops / average_watts
 
         if not logger.isEnabledFor(logging.DEBUG):  # only print progress bar in non-debug mode
-            ctx.cur_flops = flops
+            ctx.cur_flops = cur_flops_per_watt
             ctx.best_flops_per_watt = tuner.best_flops_per_watt
 
             sys.stdout.write(
@@ -167,7 +169,7 @@ def progress_bar(total, prefix="", si_prefix="G"):
                 "| %.2f s"
                 % (
                     prefix,
-                    format_si_prefix(ctx.cur_flops, si_prefix),
+                    format_si_prefix(cur_flops_per_watt, si_prefix),
                     format_si_prefix(ctx.best_flops_per_watt, si_prefix),
                     si_prefix,
                     ctx.ct,

@@ -156,16 +156,16 @@ class Tuner(object):
                     result_msg = errors[-1]
 
                 if average_flops_per_watt > self.best_flops_per_watt:
-                    self.best_flops_per_watt = flops
+                    self.best_flops_per_watt = average_flops_per_watt
                     self.best_config = config
                     self.best_measure_pair = (inp, res)
                     self.best_iter = i + k
 
                 logger.debug(
-                    "No: %d\t%sFLOPS: %.2f/%.2f\tresult: %s\t%s",
+                    "No: %d\t%sFLOPS/WATT: %.2f/%.2f\tresult: %s\t%s",
                     i + k + 1,
                     si_prefix,
-                    format_si_prefix(flops, si_prefix),
+                    format_si_prefix(average_flops_per_watt, si_prefix),
                     format_si_prefix(self.best_flops_per_watt, si_prefix),
                     result_msg,
                     config,

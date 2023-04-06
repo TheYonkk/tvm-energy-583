@@ -36,7 +36,7 @@ class MeasureInput(namedtuple("MeasureInput", ["target", "task", "config"])):
     """
 
 
-class MeasureResult(namedtuple("MeasureResult", ["costs", "error_no", "all_cost", "timestamp"])):
+class MeasureResult(namedtuple("MeasureResult", ["costs", "error_no", "all_cost", "timestamp", "energy"], defaults={"energy": None})):
     """
     Stores all the results of a measurement
 
@@ -51,6 +51,9 @@ class MeasureResult(namedtuple("MeasureResult", ["costs", "error_no", "all_cost"
         All cost of this measure, including rpc, compilation, test runs
     timestamp: float
         The absolute time stamp when we finish measurement.
+    energy: float
+        The estimated energy consumption in Joules of this measurement.
+        Defaults to None, since TVM automatically downloads old MeasureResults and will fail if this does not have a default value.
     """
 
     def __repr__(self):
@@ -61,7 +64,7 @@ class MeasureResult(namedtuple("MeasureResult", ["costs", "error_no", "all_cost"
         )
         return (
             f"{self.__class__.__name__}(costs={self.costs!r}, error_no={error_no_str}, "
-            f"all_cost={self.all_cost}, timestamp={self.timestamp!r})"
+            f"all_cost={self.all_cost}, timestamp={self.timestamp!r}, energy={self.energy!r})"
         )
 
 

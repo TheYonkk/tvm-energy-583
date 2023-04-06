@@ -50,6 +50,9 @@ from ..env import AutotvmGlobalScope
 from ..task.space import InstantiationError
 from ..utils import get_const_tuple
 from .measure import Builder, MeasureErrorNo, MeasureResult, Runner
+from pyJoules.device import DeviceFactory
+from pyJoules.device.rapl_device import RaplPackageDomain, RaplDramDomain, RaplCoreDomain, RaplUncoreDomain
+from pyJoules.energy_meter import EnergyMeter
 
 logger = logging.getLogger("autotvm")
 
@@ -664,6 +667,11 @@ def run_through_rpc(
     if isinstance(build_result, MeasureResult):
         return build_result
 
+    # manually construct energy meter. Refer to docs here: https://pyjoules.readthedocs.io/en/latest/usages/manual_usage.html
+    domains = [RaplPackageDomain(0), RaplUncoreDomain(0), RaplDramDomain(0)]
+    devices = DeviceFactory.create_devices(domains)
+    meter = EnergyMeter(devices)
+
     tic = time.time()
     errno = MeasureErrorNo.NO_ERROR
     try:
@@ -703,8 +711,10 @@ def run_through_rpc(
                         random_fill(arg)
                 dev.sync()
 
-            # perhaps wrap the energy meter here, and intercept the costs
+            # wrap the function call that tests the configuration with the energy meter
+            meter.start()
             costs = time_f(*args).results
+            meter.stop()
 
         if len(costs) > 2:  # remove largest and smallest value to reduce variance
             costs = list(costs)
@@ -721,9 +731,28 @@ def run_through_rpc(
             RuntimeError(msg[:1024]),
         )
         errno = MeasureErrorNo.RUNTIME_DEVICE
+
     tstamp = time.time()
     time.sleep(cooldown_interval)
-    return MeasureResult(costs, errno, tstamp - tic + build_result.time_cost, tstamp)
+
+    # get the energy consumption
+    trace = meter.get_trace()
+    sample = trace[0] # only one sample covering the entire period, as no "hotspots" were specified
+    # I take the package domain and subtract integrated graphics, the add DRAM as well. You can refer to the following diagram for explanation:
+    # https://pyjoules.readthedocs.io/en/latest/devices/intel_cpu.html#domains
+    total_energy_uJ = (sample.energy['package_0'] - sample.energy['uncore_0'] + sample.energy['dram_0'])
+    total_energy_J = total_energy_uJ / 1e6
+
+    # Calculate the estimated active run cost. This attempts to eliminate extraneous costs induced by the bookkeeping
+    # of loading and running the compiled module. This is expecially useful when, for example, the model only takes 0.2
+    # seconds to actually run on the CPU, but the total time to load, run, do math, and do other stuff is like 10 seconds
+    estimated_active_run_cost_J = (sum(costs) / sample.duration) * total_energy_J
+
+    # append time and energy to results file (for preliminary testing)
+    with open("/home/biff/Repositories/Energy-efficient-ML-compiler/samples.csv", "a") as f:
+        f.write(f"{tstamp - tic},{estimated_active_run_cost_J}\n")
+
+    return MeasureResult(costs, errno, tstamp - tic + build_result.time_cost, tstamp, estimated_active_run_cost_J)
 
 
 class DefaultModuleLoader:

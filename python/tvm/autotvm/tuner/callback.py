@@ -157,7 +157,7 @@ def progress_bar(total, prefix="", si_prefix="G"):
         for inp, res in zip(inputs, results):
             if res.error_no == 0:
                 flops = inp.task.flop / np.mean(res.costs)
-                average_watts = res.energy / sum(res.costs)  # watts = joules / seconds
+                average_watts = res.energy / np.sum(res.costs)  # watts = joules / seconds
                 cur_flops_per_watt = flops / average_watts
 
         if not logger.isEnabledFor(logging.DEBUG):  # only print progress bar in non-debug mode

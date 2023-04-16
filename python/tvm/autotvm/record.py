@@ -94,7 +94,7 @@ def encode(inp, result, protocol="json"):
 
     if protocol == "json":
         json_dict = {
-            "input": (str(inp.target), inp.task.name, inp.task.args, inp.task.kwargs),
+            "input": (str(inp.target), inp.task.name, inp.task.args, inp.task.kwargs, inp.task.flop),
             "config": inp.config.to_json_dict(),
             "result": (
                 result.costs if result.error_no == 0 else (1e9,),
@@ -152,7 +152,10 @@ def decode(row, protocol="json"):
                 _old_version_warning = False
             return None
 
-        tgt, task_name, task_args, task_kwargs = row["input"]
+        # protect against old configs without flop count
+        if len(row["input"]) == 4:
+            row["input"].append(None)
+        tgt, task_name, task_args, task_kwargs, task_flop = row["input"]
         tgt = str(tgt)
         if "-target" in tgt:
             logger.warning('"-target" is deprecated, use "-mtriple" instead.')
@@ -172,6 +175,7 @@ def decode(row, protocol="json"):
             return x
 
         tsk = task.Task(clean_json_to_python(task_name), clean_json_to_python(task_args))
+        tsk.flop = clean_json_to_python(task_flop) # re-add the flop count (used in selecting best FLOPS/Watt model)
         config = ConfigEntity.from_json_dict(row["config"])
         inp = MeasureInput(tgt, tsk, config)
         result = MeasureResult(*[tuple(x) if isinstance(x, list) else x for x in row["result"]])

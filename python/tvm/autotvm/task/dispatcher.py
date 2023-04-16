@@ -316,10 +316,19 @@ class ApplyHistoryBest(DispatchContext):
                 if key not in best_by_targetkey:
                     best_by_targetkey[key] = (inp, res)
                 else:
-                    _, other_res = best_by_targetkey[key]
-                    other_res_costs = other_res.energy / len(other_res.costs)
-                    res_costs = res.energy / len(res.costs)
-                    if other_res_costs < res_costs:
+                    other_inp, other_res = best_by_targetkey[key]
+
+                    # other task
+                    other_res_flops = other_inp.task.flop / np.mean(other_res.costs)  # calculate average FLOPS
+                    other_res_watts = other_res.energy / np.sum(other_res.costs)  # calculate average Watts
+                    other_res_flops_per_watt = other_res_flops / other_res_watts  # calculate FLOPS/Watt
+
+                    # current task
+                    res_flops = inp.task.flop / np.mean(res.costs)  # calculate average FLOPS
+                    res_watts = res.energy / np.sum(res.costs)  # calculate average Watts
+                    res_flops_per_watt = res_flops / res_watts  # calculate FLOPS/Watt
+
+                    if other_res_flops_per_watt  < res_flops_per_watt:
                         best_by_targetkey[key] = (inp, res)
 
             # use model as key to build best map
@@ -328,11 +337,20 @@ class ApplyHistoryBest(DispatchContext):
                 if inp.target.model != "unknown":
                     best_by_model[key] = (inp, res)
             else:
-                _, other_res = best_by_model[key]
-                other_res_costs = other_res.energy / len(other_res.costs)
-                res_costs = res.energy / len(res.costs)
-                if other_res_costs < res_costs:
-                    best_by_model[key] = (inp, res)
+                other_inp, other_res = best_by_model[key]
+
+                # other task
+                other_res_flops = other_inp.task.flop / np.mean(other_res.costs)  # calculate average FLOPS
+                other_res_watts = other_res.energy / np.sum(other_res.costs)  # calculate average Watts
+                other_res_flops_per_watt = other_res_flops / other_res_watts  # calculate FLOPS/Watt
+
+                # current task
+                res_flops = inp.task.flop / np.mean(res.costs)  # calculate average FLOPS
+                res_watts = res.energy / np.sum(res.costs)  # calculate average Watts
+                res_flops_per_watt = res_flops / res_watts  # calculate FLOPS/Watt
+
+                if other_res_flops_per_watt < res_flops_per_watt:
+                    best_by_targetkey[key] = (inp, res)
 
         logger.debug("Finish loading %d records", counter)
 

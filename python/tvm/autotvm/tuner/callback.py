@@ -111,7 +111,7 @@ class Monitor(object):
         return np.array(self.timestamps)
 
 
-def progress_bar(total, prefix="", si_prefix="G"):
+def progress_bar(total, prefix="", si_prefix="G", op_time=False):
     """Display progress bar for tuning
 
     Parameters
@@ -132,6 +132,7 @@ def progress_bar(total, prefix="", si_prefix="G"):
             self.cur_flops = 0
             self.ct = 0
             self.total = total
+            self.best_flops = 0
 
         def __del__(self):
             if logger.level < logging.DEBUG:  # only print progress bar in non-debug mode
@@ -144,15 +145,22 @@ def progress_bar(total, prefix="", si_prefix="G"):
     format_si_prefix(0, si_prefix)
 
     if logger.level < logging.DEBUG:  # only print progress bar in non-debug mode
-        sys.stdout.write(
-            "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
-            "| %.2f s" % (prefix, 0, 0, si_prefix, 0, total, time.time() - tic)
-        )
+        if op_time:
+            sys.stdout.write(
+                "\r%s Current/Best: %7.2f/%7.2f %sFLOPS | Progress: (%d/%d) "
+                "| %.2f s" % (prefix, 0, 0, si_prefix, 0, total, time.time() - tic)
+            )
+        else:
+            sys.stdout.write(
+                "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
+                "| %.2f s" % (prefix, 0, 0, si_prefix, 0, total, time.time() - tic)
+            )
         sys.stdout.flush()
 
     def _callback(tuner, inputs, results):
         ctx.ct += len(inputs)
 
+        flops = 0
         cur_flops_per_watt = 0
         for inp, res in zip(inputs, results):
             if res.error_no == 0:
@@ -164,19 +172,37 @@ def progress_bar(total, prefix="", si_prefix="G"):
             ctx.cur_flops = cur_flops_per_watt
             ctx.best_flops_per_watt = tuner.best_flops_per_watt
 
-            sys.stdout.write(
-                "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
-                "| %.2f s"
-                % (
-                    prefix,
-                    format_si_prefix(cur_flops_per_watt, si_prefix),
-                    format_si_prefix(ctx.best_flops_per_watt, si_prefix),
-                    si_prefix,
-                    ctx.ct,
-                    ctx.total,
-                    time.time() - tic,
+            ctx.cur_flops = flops
+            ctx.best_flops = tuner.best_flops
+            
+            if tuner.op_time:
+                sys.stdout.write(
+                    "\r%s Current/Best: %7.2f/%7.2f %sFLOPS | Progress: (%d/%d) "
+                    "| %.2f s"
+                    % (
+                        prefix,
+                        format_si_prefix(ctx.cur_flops, si_prefix),
+                        format_si_prefix(ctx.best_flops, si_prefix),
+                        si_prefix,
+                        ctx.ct,
+                        ctx.total,
+                        time.time() - tic,
+                    )
                 )
-            )
+            else:
+                sys.stdout.write(
+                    "\r%s Current/Best: %7.2f/%7.2f %sFLOPS/WATT | Progress: (%d/%d) "
+                    "| %.2f s"
+                    % (
+                        prefix,
+                        format_si_prefix(cur_flops_per_watt, si_prefix),
+                        format_si_prefix(ctx.best_flops_per_watt, si_prefix),
+                        si_prefix,
+                        ctx.ct,
+                        ctx.total,
+                        time.time() - tic,
+                    )
+                )
             sys.stdout.flush()
 
     return _callback

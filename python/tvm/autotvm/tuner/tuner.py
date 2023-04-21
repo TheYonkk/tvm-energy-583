@@ -51,6 +51,7 @@ class Tuner(object):
         self.best_measure_pair = None
         self.best_iter = 0
         self.error_ct_threshold = 150
+        self.best_flops = 0
 
         # time to leave
         self.ttl = None
@@ -91,7 +92,7 @@ class Tuner(object):
             result for measurement
         """
 
-    def tune(self, n_trial, measure_option, early_stopping=None, callbacks=(), si_prefix="G"):
+    def tune(self, n_trial, measure_option, early_stopping=None, callbacks=(), si_prefix="G", op_time=False):
         """Begin tuning
 
         Parameters
@@ -116,6 +117,8 @@ class Tuner(object):
         early_stopping = early_stopping or 1e9
         self.n_trial = n_trial
         self.early_stopping = early_stopping
+
+        self.op_time = op_time
 
         # Validate si_prefix arg
         format_si_prefix(0, si_prefix)
@@ -154,22 +157,38 @@ class Tuner(object):
                     else:
                         errors.append(tb + "\n" + str(error))
                     result_msg = errors[-1]
-
-                if average_flops_per_watt > self.best_flops_per_watt:
-                    self.best_flops_per_watt = average_flops_per_watt
-                    self.best_config = config
-                    self.best_measure_pair = (inp, res)
-                    self.best_iter = i + k
-
-                logger.debug(
-                    "No: %d\t%sFLOPS/WATT: %.2f/%.2f\tresult: %s\t%s",
-                    i + k + 1,
-                    si_prefix,
-                    format_si_prefix(average_flops_per_watt, si_prefix),
-                    format_si_prefix(self.best_flops_per_watt, si_prefix),
-                    result_msg,
-                    config,
-                )
+                
+                # print("op_time: ", op_time)
+                if not self.op_time:
+                    if average_flops_per_watt > self.best_flops_per_watt:
+                        self.best_flops_per_watt = average_flops_per_watt
+                        self.best_config = config
+                        self.best_measure_pair = (inp, res)
+                        self.best_iter = i + k
+                    logger.debug(
+                        "No: %d\t%sFLOPS/WATT: %.2f/%.2f\tresult: %s\t%s",
+                        i + k + 1,
+                        si_prefix,
+                        format_si_prefix(average_flops_per_watt, si_prefix),
+                        format_si_prefix(self.best_flops_per_watt, si_prefix),
+                        result_msg,
+                        config,
+                    )
+                else:
+                    if flops > self.best_flops:
+                        self.best_flops = flops
+                        self.best_config = config
+                        self.best_measure_pair = (inp, res)
+                        self.best_iter = i + k
+                    logger.debug(
+                        "No: %d\t%sFLOPS: %.2f/%.2f\tresult: %s\t%s",
+                        i + k + 1,
+                        si_prefix,
+                        format_si_prefix(flops, si_prefix),
+                        format_si_prefix(self.best_flops, si_prefix),
+                        result_msg,
+                        config,
+                    )
 
             i += len(results)
             self.ttl = min(early_stopping + self.best_iter, n_trial) - i

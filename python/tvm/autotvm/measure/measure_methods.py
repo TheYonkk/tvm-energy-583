@@ -668,7 +668,8 @@ def run_through_rpc(
         return build_result
 
     # manually construct energy meter. Refer to docs here: https://pyjoules.readthedocs.io/en/latest/usages/manual_usage.html
-    domains = [RaplPackageDomain(0), RaplUncoreDomain(0), RaplDramDomain(0)]
+    # domains = [RaplPackageDomain(0), RaplUncoreDomain(0), RaplDramDomain(0)]
+    domains = [RaplDramDomain(0), RaplDramDomain(1)]
     devices = DeviceFactory.create_devices(domains)
     meter = EnergyMeter(devices)
 
@@ -740,7 +741,8 @@ def run_through_rpc(
     sample = trace[0] # only one sample covering the entire period, as no "hotspots" were specified
     # I take the package domain and subtract integrated graphics, the add DRAM as well. You can refer to the following diagram for explanation:
     # https://pyjoules.readthedocs.io/en/latest/devices/intel_cpu.html#domains
-    total_energy_uJ = (sample.energy['package_0'] - sample.energy['uncore_0'] + sample.energy['dram_0'])
+    # total_energy_uJ = (sample.energy['package_0'] - sample.energy['uncore_0'] + sample.energy['dram_0'])
+    total_energy_uJ = sample.energy['dram_0'] + sample.energy['dram_1']
     total_energy_J = total_energy_uJ / 1e6
 
     # Calculate the estimated active run cost. This attempts to eliminate extraneous costs induced by the bookkeeping
